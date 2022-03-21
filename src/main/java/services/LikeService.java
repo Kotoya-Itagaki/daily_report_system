@@ -35,11 +35,6 @@ public class LikeService extends ServiceBase {
     }
 
     /**
-     * 指定した従業員がいいねした投稿を、指定されたページ数分取得し、一覧画面に表示する
-     * getMyLikes
-     */
-
-    /**
      * いいねデータを作成する
      * @param lv いいねデータ
      */
