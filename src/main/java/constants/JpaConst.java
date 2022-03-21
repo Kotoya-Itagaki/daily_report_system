@@ -39,15 +39,37 @@ public interface JpaConst {
     String REP_COL_CONTENT = "content"; //日報の内容
     String REP_COL_CREATED_AT = "created_at"; //登録日時
     String REP_COL_UPDATED_AT = "updated_at"; //更新日時
+    String REP_COL_LIKES_COUNT = "likes_count"; //いいね数
+
+    //いいねテーブル
+    String TABLE_LIKE = "likes"; //テーブル名
+    String LIKE_COL_ID = "id"; //id
+    String LIKE_COL_REP = "report_id"; //日報のid
+    String LIKE_COL_EMP = "employee_id"; //日報を作成した従業員のid
+    String LIKE_COL_CREATED_AT = "created_at"; //登録日時
+    String LIKE_COL_UPDATED_AT = "updated_at"; //更新日時
+
+    //フォローテーブル
+    String TABLE_FOL = "follows"; //テーブル名
+    String FOL_COL_ID = "id"; //id
+    String FOL_COL_FOLLOW = "follow_id"; //フォローした従業員のid
+    String FOL_COL_FOLLOWER = "follower_id"; //フォローされた従業員のid
+    String FOL_COL_CREATED_AT = "created_at"; //登録日時
+    String FOL_COL_UPDATED_AT = "updated_at"; //更新日時
 
     //Entity名
     String ENTITY_EMP = "employee"; //従業員
     String ENTITY_REP = "report"; //日報
+    String ENTITY_LIKE = "like"; //いいね
+    String ENTITY_FOL = "follow";
 
     //JPQL内パラメータ
     String JPQL_PARM_CODE = "code"; //社員番号
     String JPQL_PARM_PASSWORD = "password"; //パスワード
     String JPQL_PARM_EMPLOYEE = "employee"; //従業員
+    String JPQL_PARM_REPORT = "report"; //日報
+    String JPQL_PARM_FOLLOW = "employeeFollow"; //フォローした従業員
+    String JPQL_PARM_FOLLOWER = "employeeFollower"; //フォローされた従業員
 
     //NamedQueryの nameとquery
     //全ての従業員をidの降順に取得する
@@ -74,5 +96,22 @@ public interface JpaConst {
     //指定した従業員が作成した日報の件数を取得する
     String Q_REP_COUNT_ALL_MINE = ENTITY_REP + ".countAllMine";
     String Q_REP_COUNT_ALL_MINE_DEF = "SELECT COUNT(r) FROM Report AS r WHERE r.employee = :" + JPQL_PARM_EMPLOYEE;
-
+    //指定した日報のいいねのデータを取得する
+    String Q_LIKE_GET_ALL = ENTITY_LIKE + ".getAll";
+    String Q_LIKE_GET_ALL_DEF = "SELECT l FROM Like AS l WHERE l.report = :" + JPQL_PARM_REPORT + " ORDER BY l.createdAt ASC";
+    //指定した従業員がいいねしたデータを取得する
+    String Q_LIKE_GET_ALL_MINE = ENTITY_LIKE + ".getAllMine";
+    String Q_LIKE_GET_ALL_MINE_DEF = "SELECT l FROM Like AS l WHERE l.employee = :" + JPQL_PARM_EMPLOYEE + " ORDER BY l.id ASC";
+    //指定した従業員が指定した日報をすでにいいねしているか調べる
+    String Q_LIKE_COUNT_ALL_MINE = ENTITY_LIKE + ".getLikeCountByEmployee";
+    String Q_LIKE_COUNT_ALL_MINE_DEF = "SELECT COUNT(l) FROM Like AS l WHERE l.employee = :" + JPQL_PARM_EMPLOYEE + " AND l.report = :" + JPQL_PARM_REPORT;
+    //ログイン中の従業員のフォローした従業員の日報を取得する
+    String Q_FOL_GET_REPORT_BY_FOLLOW = ENTITY_FOL + ".getReportByFollow";
+    String Q_FOL_GET_REPORT_BY_FOLLOW_DEF = "SELECT r FROM Report AS r, Follow AS f WHERE r.employee = f.employeeFollower AND f.employeeFollow =:" + JPQL_PARM_FOLLOW + " ORDER BY r.id DESC";
+    //ログイン中の従業員のフォローした従業員の日報の件数を取得する
+    String Q_FOL_COUNT_REPORT_BY_FOLLOW = ENTITY_FOL + ".countReportByFollow";
+    String Q_FOL_COUNT_REPORT_BY_FOLLOW_DEF = "SELECT COUNT(r) FROM Report AS r, Follow AS f WHERE r.employee = f.employeeFollower AND f.employeeFollow =:" + JPQL_PARM_FOLLOW;
+    //すでにフォローしているかどうか調べる
+    String Q_FOL_COUNT_RESISTERED = ENTITY_FOL + ".countRegistered";
+    String Q_FOL_COUNT_RESISTERED_DEF = "SELECT COUNT(f) FROM Follow AS f WHERE f.employeeFollow = :" + JPQL_PARM_FOLLOW + " AND f.employeeFollower = :" + JPQL_PARM_FOLLOWER;
 }

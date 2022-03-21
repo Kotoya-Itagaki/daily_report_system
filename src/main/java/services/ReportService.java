@@ -154,4 +154,16 @@ public class ReportService extends ServiceBase {
 
     }
 
+    /**
+     * 日報データのいいね数を1つ増やす
+     * @param rv 日報データ
+     */
+    public void like(ReportView rv) {
+
+        em.getTransaction().begin();
+        Report r = findOneInternal(rv.getId());
+        r.setLikesCount(r.getLikesCount()+1);
+        em.getTransaction().commit();
+    }
+
 }

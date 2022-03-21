@@ -54,7 +54,7 @@ public class FrontController extends HttpServlet {
             String actionString = request.getParameter(ForwardConst.ACT.getValue());    //enumのForwardConstからactionって名前取得、パラメータがactionのものを取得
 
             //該当するActionオブジェクトを作成 (例:リクエストからパラメータ action=Employee の場合、actions.EmployeeActionオブジェクト)
-            type = Class.forName(String.format("actions.%sAction", actionString));    //%sは文字列の代入の意味、formatは第2引数の%部への代入
+            type = Class.forName(String.format("actions.%sAction", actionString));    //%sは文字列の代入の意味、formatは第2引数を%部への代入
 
             //ActionBaseのオブジェクトにキャスト(例:actions.EmployeeActionオブジェクト→actions.ActionBaseオブジェクト)
             action = (ActionBase) (type.asSubclass(ActionBase.class)

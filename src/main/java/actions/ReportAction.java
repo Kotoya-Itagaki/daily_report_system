@@ -7,11 +7,15 @@ import java.util.List;
 import javax.servlet.ServletException;
 
 import actions.views.EmployeeView;
+import actions.views.FollowView;
+import actions.views.LikeView;
 import actions.views.ReportView;
 import constants.AttributeConst;
 import constants.ForwardConst;
 import constants.JpaConst;
 import constants.MessageConst;
+import services.FollowService;
+import services.LikeService;
 import services.ReportService;
 
 /**
@@ -21,6 +25,9 @@ import services.ReportService;
 public class ReportAction extends ActionBase {
 
     private ReportService service;
+    private LikeService likeService;
+    private FollowService followService;
+
 
     /**
      * メソッドを実行する
@@ -29,11 +36,15 @@ public class ReportAction extends ActionBase {
     public void process() throws ServletException, IOException {
 
         service = new ReportService();
+        likeService = new LikeService();
+        followService = new FollowService();
 
         //メソッドを実行
         invoke();
 
         service.close();
+        likeService.close();
+        followService.close();
     }
 
     /**
@@ -115,7 +126,8 @@ public class ReportAction extends ActionBase {
                     getRequestParam(AttributeConst.REP_TITLE),
                     getRequestParam(AttributeConst.REP_CONTENT),
                     null,
-                    null);
+                    null,
+                    0);
 
             //日報情報登録
             List<String> errors = service.create(rv);
@@ -152,13 +164,25 @@ public class ReportAction extends ActionBase {
         //idを条件に日報データを取得する
         ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
 
+        //セッションからログイン中の従業員情報を取得
+        EmployeeView ev = (EmployeeView) getSessionScope(AttributeConst.LOGIN_EMP);
+
         if (rv == null) {
             //該当の日報データが存在しない場合はエラー画面を表示
             forward(ForwardConst.FW_ERR_UNKNOWN);
 
         } else {
 
+            //従業員が取得したidの日報にすでにいいねしていないか確認する
+            boolean duplicatedLike = likeService.isDuplicateLike(ev,rv);
+
+            //従業員が取得したidの日報の作成者をすでにフォローしていないか確認する
+            boolean duplicatedFollow = followService.isDuplicateFollow(ev,rv.getEmployee());
+
+            putRequestScope(AttributeConst.DUPLFOL,duplicatedFollow);//すでにフォローした従業員か調べた結果
             putRequestScope(AttributeConst.REPORT, rv); //取得した日報データ
+            putRequestScope(AttributeConst.DUPLLIKE,duplicatedLike); //すでにいいねした従業員かどうか調べた結果
+
 
             //詳細画面を表示
             forward(ForwardConst.FW_REP_SHOW);
@@ -236,4 +260,104 @@ public class ReportAction extends ActionBase {
             }
         }
     }
+
+    /**
+     * 日報にいいねする
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void like() throws ServletException, IOException{
+
+        //idを条件に日報データを取得する
+        ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
+
+        //セッションからログイン中の従業員情報を取得
+        EmployeeView ev = (EmployeeView) getSessionScope(AttributeConst.LOGIN_EMP);
+
+        if (rv == null) {
+            forward(ForwardConst.FW_ERR_UNKNOWN);
+
+        } else {
+            //日報テーブルのいいね数を増やす
+            service.like(rv);
+
+            //いいねデータをインスタンス化
+            LikeView lv = new LikeView(
+                    null,
+                    rv, //取得した日報データ
+                    ev, //ログイン中の従業員
+                    null,
+                    null);
+
+            likeService.create(lv);
+
+            //セッションスコープにフラッシュメッセージ設定
+            putSessionScope(AttributeConst.FLUSH, MessageConst.I_LIKE.getMessage());
+
+            //一覧画面にリダイレクト
+            redirect(ForwardConst.ACT_REP, ForwardConst.CMD_INDEX);
+        }
+    }
+
+    /**
+     * 詳細画面を表示する
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void showLikes() throws ServletException, IOException {
+
+      //idを条件に日報データを取得する
+        ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
+        long likesCount = rv.getLikesCount();
+
+        int page = getPage();
+        List<LikeView> likes = likeService.getReportLikes(rv,page);
+
+        putRequestScope(AttributeConst.LIKE, likes); //取得した日報のいいねデータ
+        putRequestScope(AttributeConst.LIKE_COUNT, likesCount); //いいねの件数
+        putRequestScope(AttributeConst.REP_ID, rv.getId()); //日報のid
+        putRequestScope(AttributeConst.PAGE, page); //ページ数
+        putRequestScope(AttributeConst.MAX_ROW, JpaConst.ROW_PER_PAGE); //1ページに表示するレコードの数
+
+        //いいねした人一覧へ画面遷移
+        forward(ForwardConst.FW_LIKE_SHOW);
+    }
+
+
+    /**
+     * 日報の作成者をフォローする
+     * @throws ServletException
+     * @throws IOException
+     */
+    public void follow() throws ServletException, IOException{
+
+        //idを条件に日報データを取得する
+        ReportView rv = service.findOne(toNumber(getRequestParam(AttributeConst.REP_ID)));
+
+        //セッションからログイン中の従業員情報を取得
+        EmployeeView ev = (EmployeeView) getSessionScope(AttributeConst.LOGIN_EMP);
+
+        if (rv == null) {
+            forward(ForwardConst.FW_ERR_UNKNOWN);
+
+        } else {
+            //フォローデータをインスタンス化
+            FollowView fv = new FollowView(
+                    null,
+                    ev, //ログイン中の従業員
+                    rv.getEmployee(), //取得した日報データの作成者
+                    null,
+                    null);
+
+            followService.create(fv);
+
+        //セッションスコープにフラッシュメッセージ設定
+        putSessionScope(AttributeConst.FLUSH, MessageConst.I_FOLLOW.getMessage());
+
+        //一覧画面にリダイレクト
+        redirect(ForwardConst.ACT_REP, ForwardConst.CMD_INDEX);
+
+        }
+    }
+
 }

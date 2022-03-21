@@ -6,6 +6,8 @@
 <c:set var="actRep" value="${ForwardConst.ACT_REP.getValue()}" />
 <c:set var="commIdx" value="${ForwardConst.CMD_INDEX.getValue()}" />
 <c:set var="commEdt" value="${ForwardConst.CMD_EDIT.getValue()}" />
+<c:set var="commLike" value="${ForwardConst.CMD_LIKE.getValue()}" />
+<c:set var="commFollow" value="${ForwardConst.CMD_FOLLOW.getValue()}" />
 
 <c:import url="/WEB-INF/views/layout/app.jsp">
     <c:param name="content">
@@ -37,14 +39,34 @@
                     <fmt:parseDate value="${report.updatedAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" var="updateDay" type="date" />
                     <td><fmt:formatDate value="${updateDay}" pattern="yyyy-MM-dd HH:mm:ss" /></td>
                 </tr>
+                <tr>
+                    <th>いいねされた数</th>
+                    <td><c:out value="${report.likesCount}" /></td>
+                </tr>
             </tbody>
         </table>
 
-        <c:if test="${sessionScope.login_employee.id == report.employee.id}">
+        <c:choose>
+            <c:when test="${sessionScope.login_employee.id == report.employee.id}">
+                <p>
+                    <a href="<c:url value='?action=${actRep}&command=${commEdt}&id=${report.id}' />">この日報を編集する</a>
+                </p>
+            </c:when>
+            <c:otherwise>
+                <c:if test="${duplicatedLike}">
+                    <p>
+                        <a href="<c:url value='?action=${actRep}&command=${commLike}&id=${report.id}' />">この日報にいいねする</a>
+                    <p>
+                </c:if>
+            </c:otherwise>
+        </c:choose>
+
+        <c:if test="${sessionScope.login_employee.id != report.employee.id && duplicatedFollow}" >
             <p>
-                <a href="<c:url value='?action=${actRep}&command=${commEdt}&id=${report.id}' />">この日報を編集する</a>
-            </p>
+                <a href="<c:url value='?action=${actRep}&command=${commFollow}&id=${report.id}' />">この日報の作成者をフォローする</a>
+            <p>
         </c:if>
+
 
         <p>
             <a href="<c:url value='?action=${actRep}&command=${commIdx}' />">一覧に戻る</a>
